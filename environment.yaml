@@ -1,0 +1,8 @@
+name: drunk2025
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - flask
+  - python-dotenv
