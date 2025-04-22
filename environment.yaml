@@ -6,3 +6,9 @@ channels:
 dependencies:
   - flask
   - python-dotenv
+  - pillow
+  - efficientnet_pytorch
+  - torch
+  - torchvision
+  - opencv-python
+  - pymysql
