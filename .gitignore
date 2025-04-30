@@ -1,3 +1,4 @@
 .env
 _pycache_/
 architectures/_pycache_/
+model/
