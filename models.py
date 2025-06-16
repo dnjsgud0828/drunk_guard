@@ -2,14 +2,13 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import cv2
-# from efficientnet_pytorch import EfficientNet
 from architectures.fornet import EfficientNetB4
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'drunk_guard')))
 
 class DrunkClassifier:
-    def __init__(self, model_path='model/efficientnet.pth'):
+    def __init__(self, model_path):
         self.model = EfficientNetB4() #모델 생성
         # self.model._fc = torch.nn.Linear(self.model._fc.in_features, 2)
         self.model.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False) #가중치 load

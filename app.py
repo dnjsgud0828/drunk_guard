@@ -1,7 +1,10 @@
 from flask import Flask, render_template, Response, request, redirect
 from camera import VideoCamera
+from dotenv import load_dotenv
 # from db import save_prediction, get_drunk_users
 import os
+
+load_dotenv
 
 PORT = os.environ.get('PORT')
 
