@@ -1,6 +1,6 @@
 from flask import Flask, render_template, Response, request, redirect
 from camera import VideoCamera
-from db import get_drunk_users
+from db import get_drunk_logs
 import os
 
 PORT = os.environ.get('PORT')
@@ -18,12 +18,11 @@ def detect():
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(camera.generate(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(camera.generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/log')
 def log():
-    drunk_users = get_drunk_users()
+    drunk_users = get_drunk_logs()
     return render_template('log.html', logs=drunk_users)
 
 if __name__ == '__main__':

@@ -42,6 +42,34 @@
 							<h2>Drunk Records</h2>
 							<p>Aliquam ut ex ut interdum donec amet imperdiet eleifend</p>
 						</header>
+
+						<table>
+							<thead>
+								<tr>
+									<th>시간</th>
+									<th>위치</th>
+									<th>판별 결과</th>
+									<th>이미지</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for log in logs %}
+								<tr>
+									<td>{{ log.timestamp }}</td>
+									<td>{{ log.location }}</td>
+									<td>{{ log.label }}</td>
+									<td>
+										{% if log.image_path %}
+											<img src="{{ url_for('static', filename=log.image_path.split('static/')[-1]) }}">
+										{% else %}
+											없음
+										{% endif %}
+									</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+						
 						<section class="wrapper style5">
 
 							{% for row in users %}
