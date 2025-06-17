@@ -1,6 +1,6 @@
 from flask import Flask, render_template, Response, request, redirect
 from camera import VideoCamera
-# from db import save_prediction, get_drunk_users
+from db import get_drunk_users
 import os
 
 PORT = os.environ.get('PORT')
@@ -23,9 +23,8 @@ def video_feed():
 
 @app.route('/log')
 def log():
-    # drunk_users = get_drunk_users()
-    # return render_template('log.html', users=drunk_users)
-    return render_template('log.html')
+    drunk_users = get_drunk_users()
+    return render_template('log.html', logs=drunk_users)
 
 if __name__ == '__main__':
     print(f"{PORT}번 포트에서 대기 중")

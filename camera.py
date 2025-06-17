@@ -3,12 +3,17 @@ from models import DrunkClassifier
 import torch
 from PIL import Image
 import numpy as np
+import os
 
+from datetime import datetime
+from db import save_log
+
+MODEL = os.environ.get('MODEL_PATH')
 
 class VideoCamera:
     def __init__(self):
         self.video = cv2.VideoCapture(0)  # 0은 기본 웹캠
-        self.classifier = DrunkClassifier(model_path='model/efficientnet.pth') #classifier
+        self.classifier = DrunkClassifier(model_path = MODEL) #classifier
         if not self.video.isOpened():
             raise RuntimeError("카메라를 열 수 없습니다.")
 
