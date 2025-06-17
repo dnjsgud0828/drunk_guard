@@ -1,6 +1,8 @@
 import cv2
 from models import DrunkClassifier
 import os
+import time
+from db import save_detected_image
 
 MODEL = os.environ.get('MODEL_PATH')
 
@@ -16,6 +18,9 @@ class VideoCamera:
             raise RuntimeError("카메라를 열 수 없습니다.")
         if self.face_cascade.empty():
             raise IOError(f"Could not load face cascade from {cascade_path}")
+        
+        self.last_prediction_time = 0
+        self.prediction_label = "Sober"  # 기본값
 
     def __del__(self):
         if self.video.isOpened():
@@ -26,6 +31,7 @@ class VideoCamera:
         if not success:
             return None
 
+        now = time.time()
         face = self.extract_face(frame)
 
         # if face is not None:
@@ -42,9 +48,10 @@ class VideoCamera:
         #     cv2.putText(frame, "No face", (30, 30),
         #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
-        if face is not None:
+        if face is not None and (now - self.last_prediction_time) > 3:
             label = self.classifier.predict(face)
             save_detected_image(frame, label, location="Main Gate")
+            self.last_prediction_time = now
             cv2.putText(frame, label, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         else:
             cv2.putText(frame, "No face", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
