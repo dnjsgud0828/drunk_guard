@@ -11,6 +11,16 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
 		<noscript><link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}" /></noscript>
+		<style>
+			body{
+				.log-image {
+					width: 200px;
+					height: auto;
+					border-radius: 10px;
+					border: 2px solid #555;
+				}
+			}
+		</style>
 	</head>
 	<body class="is-preload">
 
@@ -42,6 +52,53 @@
 							<h2>Drunk Records</h2>
 							<p>Aliquam ut ex ut interdum donec amet imperdiet eleifend</p>
 						</header>
+
+						<!--전체로그 삭제-->
+						<form method="POST" action="/delete_logs/all" onsubmit="return confirm('정말 모든 로그를 삭제하시겠습니까?')">
+							<button type="submit">전체 로그 삭제</button>
+						</form>
+						
+						<!-- 날짜별 삭제 -->
+						<form method="POST" action="/delete_logs/date">
+							<input type="date" name="date" required>
+							<button type="submit">해당 날짜 로그 삭제</button>
+						</form>
+						
+						<!-- 라벨별 삭제 -->
+						<form method="POST" action="/delete_logs/label">
+							<select name="label">
+								<option value="Drunk">Drunk</option>
+								<option value="Sober">Sober</option>
+							</select>
+							<button type="submit">해당 라벨 로그 삭제</button>
+						</form>
+						<table>
+							<thead>
+								<tr>
+									<th>시간</th>
+									<th>위치</th>
+									<th>판별 결과</th>
+									<th>이미지</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for log in logs %}
+								<tr>
+									<td>{{ log.timestamp }}</td>
+									<td>{{ log.location }}</td>
+									<td>{{ log.label }}</td>
+									<td>
+										{% if log.image_path %}
+											<img class="log-image" src="{{ url_for('static', filename=log.image_path.split('static/')[-1]) }}">
+										{% else %}
+											없음
+										{% endif %}
+									</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+
 						<section class="wrapper style5">
 
 							{% for row in users %}

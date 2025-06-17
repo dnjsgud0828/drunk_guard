@@ -12,3 +12,4 @@ dependencies:
   - torchvision
   - opencv-python
   - pymysql
+  - mysql-connector-python

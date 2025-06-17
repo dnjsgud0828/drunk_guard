@@ -1,25 +1,26 @@
 import cv2
 from models import DrunkClassifier
-import torch
-from PIL import Image
-import numpy as np
 import os
 import time
+from db import save_detected_image
 
 MODEL = os.environ.get('MODEL_PATH')
 
 class VideoCamera:
     def __init__(self):
-        self.video = cv2.VideoCapture(0) #0은 기본 웹캠
-        self.classifier = DrunkClassifier(model_path=MODEL)
-        if not self.video.isOpened():
-            raise RuntimeError("카메라를 열 수 없습니다.")
+        self.video = cv2.VideoCapture(0)  # 0은 기본 웹캠
+        self.classifier = DrunkClassifier(model_path = MODEL) #classifier
 
         #정확한 haarcascade 경로 설정
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         self.face_cascade = cv2.CascadeClassifier(cascade_path)
+        if not self.video.isOpened():
+            raise RuntimeError("카메라를 열 수 없습니다.")
         if self.face_cascade.empty():
             raise IOError(f"Could not load face cascade from {cascade_path}")
+        
+        self.last_prediction_time = 0
+        self.prediction_label = "Sober"  # 기본값
 
         self.last_prediction_time = 0
         # self.prediction_label = "Sober"  # 기본값
@@ -36,17 +37,29 @@ class VideoCamera:
         now = time.time()
         face = self.extract_face(frame)
 
-        # 3초마다만 모델 추론
+        # if face is not None:
+        #     label = self.classifier.predict(face)
+            
+        #     # ✅ 로그 저장 조건
+        #     if label == 'Drunk':
+        #         from db import save_detected_image  # 위에 import 되어 있지 않다면 추가
+        #         save_detected_image(frame, label='Drunk', location='Gate A')
+
+        #     cv2.putText(frame, label, (30, 30),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        # else:
+        #     cv2.putText(frame, "No face", (30, 30),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            
         if face is not None and (now - self.last_prediction_time) > 3:
-            self.prediction_label = self.classifier.predict(face)
+            label = self.classifier.predict(face)
+            save_detected_image(frame, label, location="Main Gate")
             self.last_prediction_time = now
-
-        # 항상 라벨은 표시되도록
-        cv2.putText(frame, self.prediction_label, (30, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 0, 255) if self.prediction_label == "Drunk" else (0, 255, 0), 2)
-
-        # 얼굴 위치 표시
+            cv2.putText(frame, label, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        else:
+            cv2.putText(frame, "No face", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            
+        # 얼굴 인식 (옵션), haarcascade classifier
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(
             gray, scaleFactor=1.1, minNeighbors=4, minSize=(60, 60))
@@ -65,8 +78,6 @@ class VideoCamera:
         # 얼굴이 하나라도 있으면 첫번쨰 얼굴만 사용
         for (x, y, w, h) in faces:
             return frame[y:y+h, x:x+w]
-        
-        # 얼굴이 없으면 None 반환
         return None
 
     def generate(self):

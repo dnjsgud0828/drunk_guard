@@ -3,9 +3,10 @@ from torchvision import transforms
 from PIL import Image
 import cv2
 from architectures.fornet import EfficientNetB4
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'drunk_guard')))
+
+# import sys
+# import os
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'drunk_guard')))
 
 class DrunkClassifier:
     def __init__(self, model_path):
