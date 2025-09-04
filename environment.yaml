@@ -5,6 +5,8 @@ channels:
   - defaults
 dependencies:
   - flask
+  - sqlalchemy
+  - flask_sqlalchemy
   - python-dotenv
   - pillow
   - efficientnet_pytorch
@@ -13,3 +15,5 @@ dependencies:
   - opencv-python
   - pymysql
   - mysql-connector-python
+  - face_recognition # 기존 haar 대신사용
+  - reverse_geocoder # 좌표를 주소로 바꿔주는 모듈

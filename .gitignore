@@ -3,3 +3,4 @@ _pycache_/
 architectures/_pycache_/
 model/
 haarcascade_frontalface_default.xml
+pages/

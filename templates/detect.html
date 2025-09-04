@@ -43,7 +43,7 @@
 							<p>Drunk detection using EfficientNet</p>
 						</header>
 						<section class="wrapper style5">
-							<img src="{{ url_for('video_feed') }}" width="720">
+							<img src="{{ url_for('video_feed') }}" alt="Video Feed" width="640" height="480">
 
 							<div class="inner">
 
@@ -357,6 +357,7 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 			<script src="{{ url_for('static', filename='assets/js/breakpoints.min.js') }}"></script>
 			<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
 			<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/location.js') }}"></script> <!--사용자 현재위치 추적-->
 
 	</body>
 </html>

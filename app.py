@@ -1,14 +1,38 @@
 from flask import Flask, render_template, Response, request, redirect, url_for
 from camera import VideoCamera
-# from db import get_drunk_logs
-from db import get_logs_sorted
-from db import delete_all_logs, delete_logs_by_date, delete_logs_by_label
+from db import db, get_logs_sorted, delete_all_logs, delete_logs_by_date, delete_logs_by_label
 import os
+import reverse_geocoder as rg
+from dotenv import load_dotenv
+
+load_dotenv()
 
 PORT = os.environ.get('PORT')
+current_location = "Unknown"
+
+def get_current_location():
+    return current_location
+
+def coords_to_location(lat, lon):
+    results = rg.search((lat, lon))  # [{'name': 'Seoul', 'cc': 'KR', 'admin1': 'Seoul', ...}]
+    if results:
+        city = results[0]['name']      # ex) 'Seoul'
+        country_code = results[0]['cc'] # ex) 'KR'
+        # 필요하면 나라 코드 → 나라 이름 매핑 가능 (KR → 대한민국)
+        return f"{country_code} {city}"
+    return "Unknown"
 
 app = Flask(__name__)
-camera = VideoCamera()
+
+# ✅ DB 연결
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DB_URI')  # .env에서 읽기
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+camera = VideoCamera(location_callback = get_current_location)
 
 @app.route('/')
 def main():
@@ -27,15 +51,13 @@ def log():
     sort_by = request.args.get("by", "timestamp")
     order = request.args.get("order", "desc")
     drunk_users = get_logs_sorted(by=sort_by, order=order)
-    # drunk_users = get_drunk_logs()
     return render_template('log.html', logs=drunk_users)
 
 @app.route("/delete_logs/all", methods=["POST"])
 def delete_all():
     delete_all_logs()
-    return redirect(url_for("log"))  # 로그 페이지로 리다이렉트
+    return redirect(url_for("log"))
 
-# 날짜 기준 삭제 요청
 @app.route("/delete_logs/date", methods=["POST"])
 def delete_by_date():
     date = request.form.get("date")
@@ -43,13 +65,26 @@ def delete_by_date():
         delete_logs_by_date(date)
     return redirect(url_for("log"))
 
-# 라벨 기준 삭제 요청
 @app.route("/delete_logs/label", methods=["POST"])
 def delete_by_label():
     label = request.form.get("label")
     if label:
         delete_logs_by_label(label)
     return redirect(url_for("log"))
+
+@app.route("/submit_location", methods=["POST"])
+def submit_location():
+    global current_location
+    data = request.get_json()
+    lat, lon = data.get("latitude"), data.get("longitude")
+    if lat and lon:
+        try:
+            lat, lon = float(lat), float(lon)
+            current_location = coords_to_location(lat, lon)  # "KR Seoul"
+        except Exception as e:
+            print("Location error:", e)
+            current_location = f"{lat},{lon}"
+    return {"status": "success"}
 
 if __name__ == '__main__':
     print(f"{PORT}번 포트에서 대기 중")

@@ -2,28 +2,25 @@ import cv2
 from models import DrunkClassifier
 import os
 import time
-from db import save_detected_image
+from db import save_log
+import face_recognition
+from datetime import datetime
+from dotenv import load_dotenv
 
+load_dotenv()
 MODEL = os.environ.get('MODEL_PATH')
 
 class VideoCamera:
-    def __init__(self):
-        self.video = cv2.VideoCapture(0)  # 0은 기본 웹캠
-        self.classifier = DrunkClassifier(model_path = MODEL) #classifier
+    def __init__(self, location_callback=None):
+        self.video = cv2.VideoCapture(0)
+        self.classifier = DrunkClassifier(model_path=MODEL)
+        self.get_location = location_callback
 
-        #정확한 haarcascade 경로 설정
-        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        self.face_cascade = cv2.CascadeClassifier(cascade_path)
         if not self.video.isOpened():
             raise RuntimeError("카메라를 열 수 없습니다.")
-        if self.face_cascade.empty():
-            raise IOError(f"Could not load face cascade from {cascade_path}")
-        
-        self.last_prediction_time = 0
-        self.prediction_label = "Sober"  # 기본값
 
         self.last_prediction_time = 0
-        # self.prediction_label = "Sober"  # 기본값
+        self.prediction_label = "Sober"
 
     def __del__(self):
         if self.video.isOpened():
@@ -35,49 +32,57 @@ class VideoCamera:
             return None
 
         now = time.time()
-        face = self.extract_face(frame)
+        
+        # 프레임 줄여서 얼굴 검출 (속도 개선)
+        small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+        rgb_small_frame = small_frame[:, :, ::-1]
 
-        # if face is not None:
-        #     label = self.classifier.predict(face)
-            
-        #     # ✅ 로그 저장 조건
-        #     if label == 'Drunk':
-        #         from db import save_detected_image  # 위에 import 되어 있지 않다면 추가
-        #         save_detected_image(frame, label='Drunk', location='Gate A')
+        face_locations = []
+        if int(now) % 5 == 0:  # 5프레임마다 얼굴 검출
+            face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
+            # 좌표를 원래 크기로 환산
+            face_locations = [(top*2, right*2, bottom*2, left*2) for (top, right, bottom, left) in face_locations]
 
-        #     cv2.putText(frame, label, (30, 30),
-        #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        # else:
-        #     cv2.putText(frame, "No face", (30, 30),
-        #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            
-        if face is not None and (now - self.last_prediction_time) > 3:
-            label = self.classifier.predict(face)
-            save_detected_image(frame, label, location="Main Gate")
+        
+        if len(face_locations) > 0 and (now - self.last_prediction_time) > 3:
+            top, right, bottom, left = face_locations[0]
+            face_img = frame[top:bottom, left:right]
+
+            label = self.classifier.predict(face_img)
+            location = self.get_location() if self.get_location else "Unknown"
+
+            # if label == "Drunk":
+            folder = "static/logs"
+            os.makedirs(folder, exist_ok=True)
+            filename = f"{folder}/{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            cv2.imwrite(filename, frame)
+
+            save_log(label=label, location=location, image_path=filename)
+
             self.last_prediction_time = now
-            cv2.putText(frame, label, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        else:
-            cv2.putText(frame, "No face", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            
-        # 얼굴 인식 (옵션), haarcascade classifier
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=4, minSize=(60, 60))
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 255, 0), 2)
+            self.prediction_label = label
 
-        # 프레임을 JPEG로 인코딩
+        # 얼굴에 사각형 그리기
+        for (top, right, bottom, left) in face_locations:
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+
+        # 화면에 예측 라벨 표시
+        cv2.putText(frame, self.prediction_label, (30, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1,
+                    (0, 255, 0) if self.prediction_label == "Sober" else (0, 0, 255),
+                    2)
+
         _, jpeg = cv2.imencode('.jpg', frame)
         return jpeg.tobytes()
 
     def extract_face(self, frame):
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(
-            gray, scaleFactor=1.1, minNeighbors=4, minSize=(60, 60))
-        
-        # 얼굴이 하나라도 있으면 첫번쨰 얼굴만 사용
-        for (x, y, w, h) in faces:
-            return frame[y:y+h, x:x+w]
+        rgb_frame = frame[:, :, ::-1]
+        face_locations = face_recognition.face_locations(rgb_frame)
+
+        if len(face_locations) > 0:
+            top, right, bottom, left = face_locations[0]
+            face_img = frame[top:bottom, left:right]
+            return face_img
         return None
 
     def generate(self):

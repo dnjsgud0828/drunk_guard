@@ -2,7 +2,7 @@ import torch
 from torchvision import transforms
 from PIL import Image
 import cv2
-from architectures.fornet import EfficientNetB4
+from architectures.fornet import EfficientNetB4ST, EfficientNetAutoAttB4ST
 
 # import sys
 # import os
@@ -10,9 +10,9 @@ from architectures.fornet import EfficientNetB4
 
 class DrunkClassifier:
     def __init__(self, model_path):
-        self.model = EfficientNetB4() #모델 생성
+        self.model = EfficientNetB4ST() #모델 생성
         # self.model._fc = torch.nn.Linear(self.model._fc.in_features, 2)
-        self.model.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False) #가중치 load
+        self.model.load_state_dict(torch.load(model_path, map_location='cpu')['net'], strict=False) #가중치 load
         self.model.eval()
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
