@@ -14,5 +14,5 @@ EfficientnetB4를 기반으로, Attention mechanism을 접목 후 End-to-End Tra
 
 ## 기술 스택
 1. Server: Flask
-2. Database:
+2. Database: MySQL
 3. OCR: cv2-haar cascade classifier
