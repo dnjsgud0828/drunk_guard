@@ -1,6 +1,7 @@
-from flask import Flask, render_template, Response, request, redirect, url_for
-from camera import VideoCamera
-from db import db, get_logs_sorted, delete_all_logs, delete_logs_by_date, delete_logs_by_label
+from flask import Flask, render_template, Response, request, redirect, url_for, session, jsonify
+from routes.camera import VideoCamera
+from routes.db import db, get_logs_sorted, delete_all_logs, delete_logs_by_date, delete_logs_by_label
+from routes.auth import auth_bp, login_required
 import os
 import reverse_geocoder as rg
 from dotenv import load_dotenv
@@ -23,6 +24,7 @@ def coords_to_location(lat, lon):
     return "Unknown"
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')  # 세션을 위한 시크릿 키
 
 # ✅ DB 연결
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DB_URI')  # .env에서 읽기
@@ -32,21 +34,44 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+# 블루프린트 등록
+app.register_blueprint(auth_bp)
+
 camera = VideoCamera(location_callback = get_current_location)
+
+@app.context_processor
+def inject_user():
+    """모든 템플릿에 사용자 정보 주입"""
+    return dict(
+        logged_in=session.get('logged_in', False),
+        user_id=session.get('user_id'),
+        nickname=session.get('nickname'),
+        login_type=session.get('login_type')
+    )
 
 @app.route('/')
 def main():
     return render_template('index.html')
 
 @app.route('/detect')
+@login_required
 def detect():
     return render_template('detect.html')
+
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html')
+
+@app.route('/signup', methods=['GET'])
+def signup():
+    return render_template('signup.html')
 
 @app.route('/video_feed')
 def video_feed():
     return Response(camera.generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/log')
+@login_required
 def log():
     sort_by = request.args.get("by", "timestamp")
     order = request.args.get("order", "desc")
