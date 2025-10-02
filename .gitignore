@@ -4,3 +4,5 @@ architectures/_pycache_/
 model/
 haarcascade_frontalface_default.xml
 pages/
+static/images/
+static/logs/
