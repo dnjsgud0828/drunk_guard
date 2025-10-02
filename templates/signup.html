@@ -1,0 +1,213 @@
+<!DOCTYPE HTML>
+<!--
+	Spectral by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>회원가입 - DrunkGuard</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
+		<noscript><link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}" /></noscript>
+		<style>
+			.signup-container {
+				max-width: 400px;
+				margin: 0 auto;
+				padding: 2rem;
+				background: rgba(255, 255, 255, 0.1);
+				border-radius: 10px;
+				backdrop-filter: blur(10px);
+			}
+			
+			.form-group {
+				margin-bottom: 1.5rem;
+			}
+			
+			.form-group label {
+				display: block;
+				margin-bottom: 0.5rem;
+				font-weight: bold;
+				color: #fff;
+			}
+			
+			.form-group input {
+				width: 100%;
+				padding: 0.75rem;
+				border: 1px solid #ddd;
+				border-radius: 5px;
+				font-size: 1rem;
+				background: rgba(255, 255, 255, 0.9);
+			}
+			
+			.signup-btn {
+				width: 100%;
+				padding: 0.75rem;
+				background: #3498db;
+				color: white;
+				border: none;
+				border-radius: 5px;
+				font-size: 1rem;
+				cursor: pointer;
+				transition: background 0.3s;
+			}
+			
+			.signup-btn:hover {
+				background: #2980b9;
+			}
+			
+			.login-link {
+				text-align: center;
+				margin-top: 1.5rem;
+			}
+			
+			.login-link a {
+				color: #3498db;
+				text-decoration: none;
+			}
+			
+			.login-link a:hover {
+				text-decoration: underline;
+			}
+		</style>
+	</head>
+	<body class="is-preload">
+
+		<!-- Page Wrapper -->
+			<div id="page-wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<h1><a href="{{ url_for('main') }}">DrunkGuard</a></h1>
+						<nav id="nav">
+							<ul>
+								<li class="special">
+									<a href="#menu" class="menuToggle"><span>Menu</span></a>
+									<div id="menu">
+										<ul>
+											<li><a href="{{ url_for('main') }}">Home</a></li>
+											<li><a href="{{ url_for('detect') }}">Detect</a></li>
+											<li><a href="{{ url_for('log') }}">Log</a></li>
+											<li><a href="{{ url_for('login') }}">Login</a></li>
+										</ul>
+									</div>
+								</li>
+							</ul>
+						</nav>
+					</header>
+
+				<!-- Main -->
+					<article id="main">
+						<header>
+							<h2>회원가입</h2>
+							<p>DrunkGuard에 가입하여 서비스를 이용하세요</p>
+						</header>
+
+						<section class="wrapper style5">
+							<div class="inner">
+								<div class="signup-container">
+									<form id="signupForm">
+										<div class="form-group">
+											<label for="user_id">아이디</label>
+											<input type="text" id="user_id" name="user_id" required placeholder="아이디를 입력하세요">
+										</div>
+										
+										<div class="form-group">
+											<label for="password">비밀번호</label>
+											<input type="password" id="password" name="password" required placeholder="비밀번호를 입력하세요">
+										</div>
+										
+										<div class="form-group">
+											<label for="confirm_password">비밀번호 확인</label>
+											<input type="password" id="confirm_password" name="confirm_password" required placeholder="비밀번호를 다시 입력하세요">
+										</div>
+										
+										<div class="form-group">
+											<label for="email">이메일 (선택사항)</label>
+											<input type="email" id="email" name="email" placeholder="이메일을 입력하세요">
+										</div>
+										
+										<button type="submit" class="signup-btn">회원가입</button>
+									</form>
+									
+									<div class="login-link">
+										<p>이미 계정이 있으신가요? <a href="{{ url_for('login') }}">로그인</a></p>
+									</div>
+								</div>
+							</div>
+						</section>
+					</article>
+
+				<!-- Footer -->
+					<footer id="footer">
+						<ul class="icons">
+							<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+							<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+							<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+							<li><a href="#" class="icon brands fa-dribbble"><span class="label">Dribbble</span></a></li>
+							<li><a href="#" class="icon solid fa-envelope"><span class="label">Email</span></a></li>
+						</ul>
+						<ul class="copyright">
+							<li>&copy; DrunkGuard</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+						</ul>
+					</footer>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/jquery.scrollex.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/jquery.scrolly.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/browser.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/breakpoints.min.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
+			<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+			
+			<script>
+				// 폼 제출 처리
+				document.getElementById('signupForm').addEventListener('submit', function(e) {
+					e.preventDefault();
+					
+					const formData = new FormData(this);
+					const user_id = formData.get('user_id');
+					const password = formData.get('password');
+					const confirm_password = formData.get('confirm_password');
+					const email = formData.get('email');
+					
+					// 비밀번호 확인
+					if (password !== confirm_password) {
+						alert('비밀번호가 일치하지 않습니다.');
+						return;
+					}
+					
+					// 서버로 회원가입 요청
+					fetch('/register', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							user_id: user_id,
+							password: password,
+							email: email
+						})
+					})
+					.then(response => response.json())
+					.then(data => {
+						if (data.success) {
+							alert(data.message);
+							window.location.href = "{{ url_for('login') }}";
+						} else {
+							alert(data.message);
+						}
+					})
+					.catch(error => {
+						console.error('Error:', error);
+						alert('회원가입 중 오류가 발생했습니다.');
+					});
+				});
+			</script>
+
+	</body>
+</html>
