@@ -38,8 +38,12 @@
 										<ul>
 											<li><a href="{{ url_for('main') }}">Home</a></li>
 											<li><a href="{{ url_for('detect') }}">Detect</a></li>
-											<li><a href="{{ url_for('log') }}">Log</a></li>
-											<li><a href="{{ url_for('login') }}">Login</a></li>
+											{% if logged_in %}
+												<li><a href="{{ url_for('log') }}">Log</a></li>
+												<li><a href="#" onclick="logout()">Logout ({{ nickname }})</a></li>
+											{% else %}
+												<li><a href="{{ url_for('login') }}">Login</a></li>
+											{% endif %}
 										</ul>
 									</div>
 								</li>
@@ -147,6 +151,19 @@
 			<script src="{{ url_for('static', filename='assets/js/breakpoints.min.js') }}"></script>
 			<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
 			<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+			
+			<script>
+				function logout() {
+					fetch('/logout', { method: 'POST' })
+						.then(response => response.json())
+						.then(data => {
+							if (data.success) {
+								location.reload();
+							}
+						})
+						.catch(error => console.error('Logout error:', error));
+				}
+			</script>
 
 	</body>
 </html>

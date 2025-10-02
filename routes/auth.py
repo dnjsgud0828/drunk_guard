@@ -3,10 +3,21 @@ import os
 import hashlib
 import secrets
 import requests
+from functools import wraps
 from .db import create_user, get_user_by_id, get_user_by_kakao_id, update_user
 
 
 auth_bp = Blueprint('auth', __name__)
+
+
+def login_required(f):
+    """로그인이 필요한 라우트를 보호하는 데코레이터"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def _hash_password(password: str) -> str:
@@ -35,6 +46,7 @@ def login_post():
 
     session['user_id'] = user.user_id
     session['login_type'] = user.login_type
+    session['nickname'] = user.nickname or user.user_id
     session['logged_in'] = True
     return jsonify({'success': True})
 
@@ -143,6 +155,7 @@ def kakao_callback():
 
     session['user_id'] = user.user_id
     session['login_type'] = 'kakao'
+    session['nickname'] = user.nickname or user.user_id
     session['logged_in'] = True
     return redirect(url_for('main'))
 

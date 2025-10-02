@@ -12,7 +12,14 @@ MODEL = os.environ.get('MODEL_PATH')
 
 class VideoCamera:
     def __init__(self, location_callback=None):
-        self.video = cv2.VideoCapture(0)
+        # macOS Continuity Camera 경고 해결을 위한 설정
+        self.video = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+        
+        # 카메라 설정 최적화
+        self.video.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.video.set(cv2.CAP_PROP_FPS, 30)
+        
         self.classifier = DrunkClassifier(model_path=MODEL)
         self.get_location = location_callback
 
@@ -21,6 +28,7 @@ class VideoCamera:
 
         self.last_prediction_time = 0
         self.prediction_label = "Sober"
+        self.face_detected = False
 
     def __del__(self):
         if self.video.isOpened():
@@ -43,6 +51,8 @@ class VideoCamera:
             # 좌표를 원래 크기로 환산
             face_locations = [(top*2, right*2, bottom*2, left*2) for (top, right, bottom, left) in face_locations]
 
+        # 얼굴 탐지 상태 업데이트
+        self.face_detected = len(face_locations) > 0
         
         if len(face_locations) > 0 and (now - self.last_prediction_time) > 3:
             top, right, bottom, left = face_locations[0]
@@ -66,11 +76,18 @@ class VideoCamera:
         for (top, right, bottom, left) in face_locations:
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
 
-        # 화면에 예측 라벨 표시
-        cv2.putText(frame, self.prediction_label, (30, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1,
-                    (0, 255, 0) if self.prediction_label == "Sober" else (0, 0, 255),
-                    2)
+        # 화면에 상태 메시지 표시
+        if self.face_detected:
+            # 얼굴이 탐지된 경우 추론 결과 표시
+            display_text = self.prediction_label
+            text_color = (0, 255, 0) if self.prediction_label == "Sober" else (0, 0, 255)
+        else:
+            # 얼굴이 탐지되지 않은 경우
+            display_text = "No face detected"
+            text_color = (255, 255, 0)  # 노란색
+        
+        cv2.putText(frame, display_text, (30, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, text_color, 2)
 
         _, jpeg = cv2.imencode('.jpg', frame)
         return jpeg.tobytes()
