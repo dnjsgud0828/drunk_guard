@@ -13,11 +13,12 @@
 		<noscript><link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}" /></noscript>
 		<style>
 			.signup-container {
-				max-width: 400px;
+				max-width: 28rem;
 				margin: 0 auto;
 				padding: 2rem;
-				background: rgba(255, 255, 255, 0.1);
+				background: rgba(255, 255, 255, 0.05);
 				border-radius: 10px;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 				backdrop-filter: blur(10px);
 			}
 			
@@ -35,10 +36,15 @@
 			.form-group input {
 				width: 100%;
 				padding: 0.75rem;
-				border: 1px solid #ddd;
+				border: 1px solid rgba(255,255,255,0.2);
 				border-radius: 5px;
 				font-size: 1rem;
-				background: rgba(255, 255, 255, 0.9);
+				background: rgba(255,255,255,0.1);
+				color: #fff;
+			}
+			
+			.form-group input::placeholder {
+				color: rgba(255,255,255,0.6);
 			}
 			
 			.signup-btn {
@@ -63,11 +69,14 @@
 			}
 			
 			.login-link a {
-				color: #3498db;
+				color: #fff;
 				text-decoration: none;
+				opacity: 0.8;
+				transition: opacity 0.3s;
 			}
 			
 			.login-link a:hover {
+				opacity: 1;
 				text-decoration: underline;
 			}
 		</style>
@@ -88,8 +97,12 @@
 										<ul>
 											<li><a href="{{ url_for('main') }}">Home</a></li>
 											<li><a href="{{ url_for('detect') }}">Detect</a></li>
-											<li><a href="{{ url_for('log') }}">Log</a></li>
-											<li><a href="{{ url_for('login') }}">Login</a></li>
+											{% if logged_in %}
+												<li><a href="{{ url_for('log') }}">Log</a></li>
+												<li><a href="#" onclick="logout()">Logout ({{ nickname }})</a></li>
+											{% else %}
+												<li><a href="{{ url_for('login') }}">Login</a></li>
+											{% endif %}
 										</ul>
 									</div>
 								</li>
@@ -207,6 +220,17 @@
 						alert('회원가입 중 오류가 발생했습니다.');
 					});
 				});
+				
+				function logout() {
+					fetch('/logout', { method: 'POST' })
+						.then(response => response.json())
+						.then(data => {
+							if (data.success) {
+								location.reload();
+							}
+						})
+						.catch(error => console.error('Logout error:', error));
+				}
 			</script>
 
 	</body>

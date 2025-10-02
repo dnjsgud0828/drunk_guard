@@ -12,12 +12,154 @@
 		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
 		<noscript><link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}" /></noscript>
 		<style>
-			body{
+			.log-image {
+				width: 150px;
+				height: auto;
+				border-radius: 8px;
+				border: 2px solid #ddd;
+				box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+				transition: transform 0.3s ease;
+			}
+			
+			.log-image:hover {
+				transform: scale(1.1);
+				box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+			}
+			
+			.controls-section {
+				margin-bottom: 2rem;
+			}
+			
+			.controls-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 1rem;
+				align-items: end;
+				margin-bottom: 1rem;
+			}
+			
+			.control-group {
+				display: flex;
+				flex-direction: column;
+				min-width: 200px;
+			}
+			
+			.control-group label {
+				font-size: 0.9em;
+				margin-bottom: 0.3rem;
+				color: #666;
+				font-weight: bold;
+			}
+			
+			.control-group input,
+			.control-group select {
+				padding: 0.5rem;
+				border: 1px solid #ddd;
+				border-radius: 4px;
+				font-size: 0.9em;
+			}
+			
+			.control-group .button {
+				white-space: nowrap;
+				min-width: 80px;
+				height: 42px;
+				padding: 0 1rem;
+				font-size: 0.9em;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				line-height: 1;
+				box-sizing: border-box;
+			}
+			
+			.control-group .button.special {
+				min-width: 100px;
+			}
+			
+			.control-group input,
+			.control-group select {
+				height: 42px;
+				box-sizing: border-box;
+			}
+			
+			.log-table-container {
+				overflow-x: auto;
+				margin-top: 2rem;
+			}
+			
+			.log-table {
+				width: 100%;
+				border-collapse: collapse;
+				background: #fff;
+				border-radius: 8px;
+				overflow: hidden;
+				box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			}
+			
+			.log-table th {
+				background: #f8f9fa;
+				padding: 1rem;
+				text-align: left;
+				font-weight: bold;
+				color: #333;
+				border-bottom: 2px solid #dee2e6;
+			}
+			
+			.log-table td {
+				padding: 1rem;
+				border-bottom: 1px solid #dee2e6;
+				vertical-align: middle;
+			}
+			
+			.log-table tr:hover {
+				background: #f8f9fa;
+			}
+			
+			.label-badge {
+				padding: 0.3rem 0.8rem;
+				border-radius: 20px;
+				font-size: 0.8em;
+				font-weight: bold;
+				text-transform: uppercase;
+			}
+			
+			.label-drunk {
+				background: #ff6b6b;
+				color: white;
+			}
+			
+			.label-sober {
+				background: #51cf66;
+				color: white;
+			}
+			
+			.timestamp {
+				font-family: monospace;
+				font-size: 0.9em;
+				color: #666;
+			}
+			
+			.location {
+				color: #495057;
+			}
+			
+			@media (max-width: 768px) {
+				.controls-row {
+					flex-direction: column;
+				}
+				
+				.control-group {
+					min-width: 100%;
+				}
+				
+				.log-table th,
+				.log-table td {
+					padding: 0.5rem;
+					font-size: 0.9em;
+				}
+				
 				.log-image {
-					width: 200px;
-					height: auto;
-					border-radius: 10px;
-					border: 2px solid #555;
+					width: 100px;
 				}
 			}
 		</style>
@@ -58,71 +200,118 @@
 							<p>판단 당시의 위치와 장소를 기록</p>
 						</header>
 
-						<!--전체로그 삭제-->
-						<form method="POST" action="/delete_logs/all" onsubmit="return confirm('정말 모든 로그를 삭제하시겠습니까?')">
-							<button type="submit">전체 로그 삭제</button>
-						</form>
-						
-						<!-- 날짜별 삭제 -->
-						<form method="POST" action="/delete_logs/date">
-							<input type="date" name="date" required>
-							<button type="submit">해당 날짜 로그 삭제</button>
-						</form>
-						
-						<!-- 라벨별 삭제 -->
-						<form method="POST" action="/delete_logs/label">
-							<select name="label">
-								<option value="Drunk">Drunk</option>
-								<option value="Sober">Sober</option>
-							</select>
-							<button type="submit">해당 라벨 로그 삭제</button>
-						</form>
-						<table>
-							<thead>
-								<tr>
-									<th>시간</th>
-									<th>위치</th>
-									<th>판별 결과</th>
-									<th>이미지</th>
-								</tr>
-							</thead>
-							<tbody>
-								{% for log in logs %}
-								<tr>
-									<td>{{ log.timestamp }}</td>
-									<td>{{ log.location }}</td>
-									<td>{{ log.label }}</td>
-									<td>
-										{% if log.image_path %}
-											<img class="log-image" src="{{ url_for('static', filename=log.image_path.split('static/')[-1]) }}">
-										{% else %}
-											없음
-										{% endif %}
-									</td>
-								</tr>
-								{% endfor %}
-							</tbody>
-						</table>
-
 						<section class="wrapper style5">
-
-							{% for row in users %}
-        						<li>{{ row[0] }} — <img src="{{ url_for('static', filename=row[1].split('static/')[1]) }}" width="100"></li>
-      						{% endfor %}
 							<div class="inner">
+								<!-- 컨트롤 섹션 -->
+								<div class="controls-section">
+									<h3>로그 관리</h3>
+									
+									<!-- 첫 번째 줄: 필터링 -->
+									<div class="controls-row">
+										<div class="control-group">
+											<label for="filter-label">라벨별 보기</label>
+											<div style="display: flex; gap: 0.5rem;">
+												<select id="filter-label" onchange="filterLogs()">
+													<option value="all">전체 보기</option>
+													<option value="Drunk">Drunk만 보기</option>
+													<option value="Sober">Sober만 보기</option>
+												</select>
+												<button type="button" class="button small" onclick="resetFilter()">초기화</button>
+											</div>
+										</div>
+										
+										<div class="control-group">
+											<label for="filter-date">날짜별 보기</label>
+											<div style="display: flex; gap: 0.5rem;">
+												<input type="date" id="filter-date" onchange="filterLogs()">
+												<button type="button" class="button small" onclick="clearDateFilter()">지우기</button>
+											</div>
+										</div>
+									</div>
+									
+									<!-- 두 번째 줄: 삭제 기능 -->
+									<div class="controls-row">
+										<form method="POST" action="/delete_logs/date" class="control-group">
+											<label for="date-input">날짜별 삭제</label>
+											<div style="display: flex; gap: 0.5rem;">
+												<input type="date" id="date-input" name="date" required>
+												<button type="submit" class="button small">삭제</button>
+											</div>
+										</form>
+										
+										<form method="POST" action="/delete_logs/label" class="control-group">
+											<label for="label-select">라벨별 삭제</label>
+											<div style="display: flex; gap: 0.5rem;">
+												<select id="label-select" name="label">
+													<option value="Drunk">Drunk</option>
+													<option value="Sober">Sober</option>
+												</select>
+												<button type="submit" class="button small">삭제</button>
+											</div>
+										</form>
+										
+										<form method="POST" action="/delete_logs/all" class="control-group" onsubmit="return confirm('정말 모든 로그를 삭제하시겠습니까?')">
+											<label>&nbsp;</label>
+											<button type="submit" class="button small special">전체 삭제</button>
+										</form>
+									</div>
+								</div>
 
-								<h3>Lorem ipsum dolor</h3>
-								<p>Morbi mattis mi consectetur tortor elementum, varius pellentesque velit convallis. Aenean tincidunt lectus auctor mauris maximus, ac scelerisque ipsum tempor. Duis vulputate ex et ex tincidunt, quis lacinia velit aliquet. Duis non efficitur nisi, id malesuada justo. Maecenas sagittis felis ac sagittis semper. Curabitur purus leo, tempus sed finibus eget, fringilla quis risus. Maecenas et lorem quis sem varius sagittis et a est. Maecenas iaculis iaculis sem. Donec vel dolor at arcu tincidunt bibendum. Interdum et malesuada fames ac ante ipsum primis in faucibus. Fusce ut aliquet justo. Donec id neque ipsum. Integer eget ultricies odio. Nam vel ex a orci fringilla tincidunt. Aliquam eleifend ligula non velit accumsan cursus. Etiam ut gravida sapien.</p>
-
-								<p>Vestibulum ultrices risus velit, sit amet blandit massa auctor sit amet. Sed eu lectus sem. Phasellus in odio at ipsum porttitor mollis id vel diam. Praesent sit amet posuere risus, eu faucibus lectus. Vivamus ex ligula, tempus pulvinar ipsum in, auctor porta quam. Proin nec dui cursus, posuere dui eget interdum. Fusce lectus magna, sagittis at facilisis vitae, pellentesque at etiam. Quisque posuere leo quis sem commodo, vel scelerisque nisi scelerisque. Suspendisse id quam vel tortor tincidunt suscipit. Nullam auctor orci eu dolor consectetur, interdum ullamcorper ante tincidunt. Mauris felis nec felis elementum varius.</p>
-
-								<hr />
-
-								<h4>Feugiat aliquam</h4>
-								<p>Nam sapien ante, varius in pulvinar vitae, rhoncus id massa. Donec varius ex in mauris ornare, eget euismod urna egestas. Etiam lacinia tempor ipsum, sodales porttitor justo. Aliquam dolor quam, semper in tortor eu, volutpat efficitur quam. Fusce nec fermentum nisl. Aenean erat diam, tempus aliquet erat.</p>
-
-								<p>Etiam iaculis nulla ipsum, et pharetra libero rhoncus ut. Phasellus rutrum cursus velit, eget condimentum nunc blandit vel. In at pulvinar lectus. Morbi diam ante, vulputate et imperdiet eget, fermentum non dolor. Ut eleifend sagittis tincidunt. Sed viverra commodo mi, ac rhoncus justo. Duis neque ligula, elementum ut enim vel, posuere finibus justo. Vivamus facilisis maximus nibh quis pulvinar. Quisque hendrerit in ipsum id tellus facilisis fermentum. Proin mauris dui, at vestibulum sit amet, auctor bibendum neque.</p>
-
+								<!-- 테이블 섹션 -->
+								<div class="log-table-container">
+									<table class="log-table">
+										<thead>
+											<tr>
+												<th>시간</th>
+												<th>위치</th>
+												<th>판별 결과</th>
+												<th>이미지</th>
+											</tr>
+										</thead>
+										<tbody id="log-tbody">
+											{% for log in logs %}
+											<tr class="log-row" 
+												data-label="{{ log.label }}" 
+												data-date="{{ log.timestamp.strftime('%Y-%m-%d') if log.timestamp else '' }}">
+												<td class="timestamp">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}</td>
+												<td class="location">{{ log.location or 'Unknown' }}</td>
+												<td>
+													<span class="label-badge {{ 'label-drunk' if log.label == 'Drunk' else 'label-sober' }}">
+														{{ log.label }}
+													</span>
+												</td>
+												<td>
+													{% if log.image_path %}
+														<img class="log-image" src="{{ url_for('static', filename=log.image_path.split('static/')[-1]) }}" alt="Detection Image">
+													{% else %}
+														<span style="color: #999; font-style: italic;">이미지 없음</span>
+													{% endif %}
+												</td>
+											</tr>
+											{% else %}
+											<tr id="no-logs-row">
+												<td colspan="4" style="text-align: center; padding: 2rem; color: #999;">
+													<i class="icon solid fa-info-circle" style="margin-right: 0.5rem;"></i>
+													기록된 로그가 없습니다.
+												</td>
+											</tr>
+											{% endfor %}
+											<tr id="no-filtered-logs-row" style="display: none;">
+												<td colspan="4" style="text-align: center; padding: 2rem; color: #999;">
+													<i class="icon solid fa-search" style="margin-right: 0.5rem;"></i>
+													필터 조건에 맞는 로그가 없습니다.
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+								
+								{% if logs %}
+								<div id="log-stats" style="margin-top: 1rem; text-align: center; color: #666; font-size: 0.9em;">
+									<span id="total-count">총 {{ logs|length }}개의 기록</span>
+									<span id="filtered-count" style="display: none;"></span>
+								</div>
+								{% endif %}
 							</div>
 						</section>
 					</article>
@@ -137,7 +326,7 @@
 							<li><a href="#" class="icon solid fa-envelope"><span class="label">Email</span></a></li>
 						</ul>
 						<ul class="copyright">
-							<li>&copy; Untitled</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+							<li>&copy; DrunkGuard</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
 						</ul>
 					</footer>
 
@@ -163,6 +352,99 @@
 						})
 						.catch(error => console.error('Logout error:', error));
 				}
+				
+				function filterLogs() {
+					const labelFilter = document.getElementById('filter-label').value;
+					const dateFilter = document.getElementById('filter-date').value;
+					const rows = document.querySelectorAll('.log-row');
+					const noLogsRow = document.getElementById('no-logs-row');
+					const noFilteredLogsRow = document.getElementById('no-filtered-logs-row');
+					
+					let visibleCount = 0;
+					let totalRows = rows.length;
+					
+					// 원래 "로그가 없습니다" 행 숨기기
+					if (noLogsRow) {
+						noLogsRow.style.display = 'none';
+					}
+					
+					rows.forEach(row => {
+						const rowLabel = row.getAttribute('data-label');
+						const rowDate = row.getAttribute('data-date');
+						
+						let showRow = true;
+						
+						// 라벨 필터링
+						if (labelFilter !== 'all' && rowLabel !== labelFilter) {
+							showRow = false;
+						}
+						
+						// 날짜 필터링
+						if (dateFilter && rowDate !== dateFilter) {
+							showRow = false;
+						}
+						
+						if (showRow) {
+							row.style.display = '';
+							visibleCount++;
+						} else {
+							row.style.display = 'none';
+						}
+					});
+					
+					// 필터링된 결과가 없을 때 메시지 표시
+					if (totalRows > 0 && visibleCount === 0) {
+						noFilteredLogsRow.style.display = '';
+					} else {
+						noFilteredLogsRow.style.display = 'none';
+					}
+					
+					// 통계 업데이트
+					updateStats(visibleCount, totalRows, labelFilter, dateFilter);
+				}
+				
+				function updateStats(visibleCount, totalRows, labelFilter, dateFilter) {
+					const totalCountSpan = document.getElementById('total-count');
+					const filteredCountSpan = document.getElementById('filtered-count');
+					
+					if (labelFilter === 'all' && !dateFilter) {
+						// 필터가 없을 때
+						totalCountSpan.style.display = '';
+						filteredCountSpan.style.display = 'none';
+					} else {
+						// 필터가 있을 때
+						totalCountSpan.style.display = 'none';
+						filteredCountSpan.style.display = '';
+						
+						let filterText = '';
+						if (labelFilter !== 'all' && dateFilter) {
+							filterText = `${labelFilter} 라벨, ${dateFilter} 날짜`;
+						} else if (labelFilter !== 'all') {
+							filterText = `${labelFilter} 라벨`;
+						} else if (dateFilter) {
+							filterText = `${dateFilter} 날짜`;
+						}
+						
+						filteredCountSpan.textContent = `${filterText} 필터링: ${visibleCount}개 / 전체 ${totalRows}개`;
+					}
+				}
+				
+				function resetFilter() {
+					document.getElementById('filter-label').value = 'all';
+					document.getElementById('filter-date').value = '';
+					filterLogs();
+				}
+				
+				function clearDateFilter() {
+					document.getElementById('filter-date').value = '';
+					filterLogs();
+				}
+				
+				// 페이지 로드 시 초기화
+				document.addEventListener('DOMContentLoaded', function() {
+					// 초기 상태에서는 모든 로그 표시
+					filterLogs();
+				});
 			</script>
 
 	</body>

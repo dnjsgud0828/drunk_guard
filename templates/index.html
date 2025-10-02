@@ -55,39 +55,42 @@
 					</section>
 
 				<!-- Two -->
-					<section id="two" class="wrapper alt style2">
-						<section class="spotlight">
-							<div class="image"><img src="{{ url_for('static', filename='images/pic01.jpg') }}" alt="" /></div><div class="content">
-								<h2>Magna primis lobortis<br />
-								sed ullamcorper</h2>
-								<p>Aliquam ut ex ut augue consectetur interdum. Donec hendrerit imperdiet. Mauris eleifend fringilla nullam aenean mi ligula.</p>
+					<section id="two" class="wrapper style2" style="padding: 2rem 0;">
+						<div class="inner" style="max-width: 1200px;">
+							<div class="features" style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center;">
+								<div class="feature" style="flex: 1; min-width: 300px; max-width: 350px; text-align: center;">
+									<div class="image" style="margin-bottom: 1rem;"><img src="{{ url_for('static', filename='images/pic01.jpg') }}" alt="" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;" /></div>
+									<h3 style="margin-bottom: 0.5rem; font-size: 1.2em;">실시간 AI 분석</h3>
+									<p style="font-size: 0.9em; line-height: 1.4;">카메라를 통한 비접촉식 음주 상태 감지로 안전하고 신속한 판별</p>
+								</div>
+								<div class="feature" style="flex: 1; min-width: 300px; max-width: 350px; text-align: center;">
+									<div class="image" style="margin-bottom: 1rem;"><img src="{{ url_for('static', filename='images/pic03.jpg') }}" alt="" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;" /></div>
+									<h3 style="margin-bottom: 0.5rem; font-size: 1.2em;">높은 정확도</h3>
+									<p style="font-size: 0.9em; line-height: 1.4;">EfficientNet 기반 딥러닝 모델로 신뢰할 수 있는 음주 판별 결과 제공</p>
+								</div>
+								<div class="feature" style="flex: 1; min-width: 300px; max-width: 350px; text-align: center;">
+									<div class="image" style="margin-bottom: 1rem;"><img src="{{ url_for('static', filename='images/pic02.jpg') }}" alt="" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;" /></div>
+									<h3 style="margin-bottom: 0.5rem; font-size: 1.2em;">스마트 기록 관리</h3>
+									<p style="font-size: 0.9em; line-height: 1.4;">탐지 이력을 자동 저장하고 날짜별, 결과별 필터링으로 효율적 관리</p>
+								</div>
 							</div>
-						</section>
-						<section class="spotlight">
-							<div class="image"><img src="{{ url_for('static', filename='images/pic02.jpg') }}" alt="" /></div><div class="content">
-								<h2>Tortor dolore feugiat<br />
-								elementum magna</h2>
-								<p>Aliquam ut ex ut augue consectetur interdum. Donec hendrerit imperdiet. Mauris eleifend fringilla nullam aenean mi ligula.</p>
-							</div>
-						</section>
-						<section class="spotlight">
-							<div class="image"><img src="{{ url_for('static', filename='images/pic03.jpg') }}" alt="" /></div><div class="content">
-								<h2>Augue eleifend aliquet<br />
-								sed condimentum</h2>
-								<p>Aliquam ut ex ut augue consectetur interdum. Donec hendrerit imperdiet. Mauris eleifend fringilla nullam aenean mi ligula.</p>
-							</div>
-						</section>
+						</div>
 					</section>
 				<!-- CTA -->
 					<section id="cta" class="wrapper style4">
 						<div class="inner">
 							<header>
-								<h2>Arcue ut vel commodo</h2>
-								<p>Aliquam ut ex ut augue consectetur interdum endrerit imperdiet amet eleifend fringilla.</p>
+								<h2>간단한 회원가입으로 더 나은 서비스</h2>
+								<p>사용 모델 및 데이터 셋 정보<br>
+									<span style="font-size: 0.8em; color: #999; opacity: 0.7;">
+										기본 모델: <a href="https://github.com/polimi-ispl/icpr2020dfdc" style="color: #888; text-decoration: none; border-bottom: 1px dotted #888;">https://github.com/polimi-ispl/icpr2020dfdc</a><br>
+										사용 데이터 셋: <a href="https://arxiv.org/abs/1805.10030" style="color: #888; text-decoration: none; border-bottom: 1px dotted #888;">https://arxiv.org/abs/1805.10030</a>
+									</span>
+								</p>
 							</header>
 							<ul class="actions stacked">
 								<li><a href="{{ url_for('detect')}}" class="button fit primary">Activate</a></li>
-								<li><a href="#" class="button fit">Learn More</a></li>
+								<li><a href="https://github.com/polimi-ispl/icpr2020dfdc" class="button fit">Learn More</a></li>
 							</ul>
 						</div>
 					</section>
