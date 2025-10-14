@@ -36,15 +36,25 @@
 			.form-group input {
 				width: 100%;
 				padding: 0.75rem;
-				border: 1px solid rgba(255,255,255,0.2);
 				border-radius: 5px;
-				font-size: 1rem;
-				background: rgba(255,255,255,0.1);
-				color: #fff;
+				border: 2px solid rgba(255,255,255,0.6);
+				background: rgba(255,255,255,0.3);
+				color: #fff !important;
+				font-weight: 600;
+				font-size: 1.1rem;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+			}
+			
+			.form-group input:focus {
+				outline: none;
+				border-color: rgba(255,255,255,0.9);
+				background: rgba(255,255,255,0.4);
 			}
 			
 			.form-group input::placeholder {
-				color: rgba(255,255,255,0.6);
+				color: rgba(255,255,255,0.8) !important;
+				font-weight: 500;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 			}
 			
 			.signup-btn {
@@ -54,30 +64,56 @@
 				color: white;
 				border: none;
 				border-radius: 5px;
-				font-size: 1rem;
+				font-size: 1.1rem;
+				font-weight: 600;
 				cursor: pointer;
 				transition: background 0.3s;
+				text-align: center;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 			}
 			
 			.signup-btn:hover {
 				background: #2980b9;
 			}
 			
+			.actions {
+				text-align: center;
+			}
+			
+			.actions li {
+				display: block;
+				margin: 0;
+			}
+			
 			.login-link {
 				text-align: center;
-				margin-top: 1.5rem;
+				margin-top: 2rem;
+				padding: 1rem;
+				background: rgba(255,255,255,0.1);
+				border-radius: 8px;
+				border: 1px solid rgba(255,255,255,0.2);
 			}
 			
 			.login-link a {
-				color: #fff;
+				color: #fff !important;
 				text-decoration: none;
-				opacity: 0.8;
-				transition: opacity 0.3s;
+				font-weight: 600;
+				font-size: 1.1rem;
+				display: inline-block;
+				padding: 0.5rem 1rem;
+				background: rgba(255,255,255,0.2);
+				border-radius: 5px;
+				transition: all 0.3s ease;
+				border: 1px solid rgba(255,255,255,0.3);
 			}
 			
 			.login-link a:hover {
-				opacity: 1;
-				text-decoration: underline;
+				background: rgba(255,255,255,0.3);
+				transform: translateY(-2px);
+				box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 			}
 		</style>
 	</head>
@@ -102,6 +138,7 @@
 												<li><a href="#" onclick="logout()">Logout ({{ nickname }})</a></li>
 											{% else %}
 												<li><a href="{{ url_for('login') }}">Login</a></li>
+												<li><a href="{{ url_for('signup') }}">Signup</a></li>
 											{% endif %}
 										</ul>
 									</div>
@@ -141,11 +178,14 @@
 											<input type="email" id="email" name="email" placeholder="이메일을 입력하세요">
 										</div>
 										
-										<button type="submit" class="signup-btn">회원가입</button>
+										<ul class="actions">
+											<li><button type="submit" class="signup-btn">회원가입</button></li>
+										</ul>
 									</form>
 									
 									<div class="login-link">
-										<p>이미 계정이 있으신가요? <a href="{{ url_for('login') }}">로그인</a></p>
+										<p style="margin-bottom: 0.5rem; color: rgba(255,255,255,0.8); font-size: 0.9em;">이미 계정이 있으신가요?</p>
+										<a href="{{ url_for('login') }}">로그인하기</a>
 									</div>
 								</div>
 							</div>

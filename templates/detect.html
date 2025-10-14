@@ -33,6 +33,7 @@
 												<li><a href="#" onclick="logout()">Logout ({{ nickname }})</a></li>
 											{% else %}
 												<li><a href="{{ url_for('login') }}">Login</a></li>
+												<li><a href="{{ url_for('signup') }}">Signup</a></li>
 											{% endif %}
 										</ul>
 									</div>
@@ -54,6 +55,26 @@
 								</div>
 								<div style="margin-top: 20px;">
 									<p style="color: #666; font-size: 0.9em;">실시간 음주 감지 중...</p>
+									
+									<!-- 임계값 조절 UI -->
+									<div style="margin-top: 15px; padding: 15px; background-color: #f8f8f8; border-radius: 8px; border: 1px solid #ddd;">
+										<h4 style="margin-bottom: 10px; color: #333;">감지 민감도 조절</h4>
+										<div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+											<label for="threshold" style="color: #666; font-weight: bold;">임계값:</label>
+											<input type="range" id="threshold" name="threshold" min="0.1" max="0.9" step="0.1" value="0.7" 
+												   style="width: 200px;" onchange="updateThreshold(this.value)">
+											<span id="thresholdValue" style="color: #333; font-weight: bold; min-width: 40px;">0.7</span>
+										</div>
+										<div style="margin-top: 8px; font-size: 0.8em; color: #888;">
+											<span style="float: left;">높은 민감도 (0.1)</span>
+											<span style="float: right;">낮은 민감도 (0.9)</span>
+										</div>
+										<div style="clear: both;"></div>
+										<p style="margin-top: 10px; font-size: 0.8em; color: #666;">
+											<strong>현재 설정:</strong> <span id="currentThreshold">0.7</span> 
+											(값이 높을수록 오탐율 감소, 값이 낮을수록 탐지율 증가)
+										</p>
+									</div>
 								</div>
 							</div>
 						</section>
@@ -83,6 +104,58 @@
 			<script src="{{ url_for('static', filename='assets/js/breakpoints.min.js') }}"></script>
 			<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
 			<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+			
+			<script>
+				// 페이지 로드 시 현재 임계값 가져오기
+				$(document).ready(function() {
+					getCurrentThreshold();
+				});
+				
+				// 임계값 업데이트 함수
+				function updateThreshold(value) {
+					document.getElementById('thresholdValue').textContent = value;
+					document.getElementById('currentThreshold').textContent = value;
+					
+					// 서버에 임계값 전송
+					fetch('/set_threshold', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded',
+						},
+						body: 'threshold=' + value
+					})
+					.then(response => response.json())
+					.then(data => {
+						if (data.success) {
+							console.log('임계값 업데이트 성공:', data.message);
+						} else {
+							console.error('임계값 업데이트 실패:', data.message);
+							alert('임계값 업데이트에 실패했습니다: ' + data.message);
+						}
+					})
+					.catch(error => {
+						console.error('오류:', error);
+						alert('임계값 업데이트 중 오류가 발생했습니다.');
+					});
+				}
+				
+				// 현재 임계값 가져오기 함수
+				function getCurrentThreshold() {
+					fetch('/get_threshold')
+					.then(response => response.json())
+					.then(data => {
+						if (data.success) {
+							const threshold = data.threshold;
+							document.getElementById('threshold').value = threshold;
+							document.getElementById('thresholdValue').textContent = threshold;
+							document.getElementById('currentThreshold').textContent = threshold;
+						}
+					})
+					.catch(error => {
+						console.error('현재 임계값 가져오기 실패:', error);
+					});
+				}
+			</script>
 			<script src="{{ url_for('static', filename='assets/js/location.js') }}"></script> <!--사용자 현재위치 추적-->
 			
 			<script>

@@ -23,20 +23,17 @@ class User(db.Model):
     __tablename__ = "users"
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(50), unique=True, nullable=False)  # 일반 로그인용 아이디
-    password = db.Column(db.String(255), nullable=True)  # 해시된 비밀번호 (카카오 로그인은 NULL)
+    user_id = db.Column(db.String(50), unique=True, nullable=False)  # 로그인용 아이디
+    password = db.Column(db.String(255), nullable=False)  # 해시된 비밀번호
     email = db.Column(db.String(100), nullable=True)  # 이메일 (선택사항)
     nickname = db.Column(db.String(50), nullable=True)  # 닉네임
-    profile_image = db.Column(db.String(200), nullable=True)  # 프로필 이미지 URL
-    login_type = db.Column(db.String(20), nullable=False, default='normal')  # 'normal' or 'kakao'
-    kakao_id = db.Column(db.String(50), nullable=True, unique=True)  # 카카오 고유 ID
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f"<User {self.user_id} ({self.login_type}) at {self.created_at}>"
+        return f"<User {self.user_id} at {self.created_at}>"
     
-# ----------- CRUD 함수 -----------
+# ----------- Log CRUD 함수 -----------
 
 def save_log(label, location, image_path):
     from app import app   # Flask app 가져오기
@@ -73,7 +70,7 @@ def get_logs_sorted(by="timestamp", order="desc"):
 
 # ----------- User CRUD 함수 -----------
 
-def create_user(user_id, password_hash=None, email=None, nickname=None, profile_image=None, login_type='normal', kakao_id=None):
+def create_user(user_id, password_hash, email=None, nickname=None):
     """새 사용자 생성"""
     from app import app
     with app.app_context():
@@ -81,10 +78,7 @@ def create_user(user_id, password_hash=None, email=None, nickname=None, profile_
             user_id=user_id,
             password=password_hash,
             email=email,
-            nickname=nickname,
-            profile_image=profile_image,
-            login_type=login_type,
-            kakao_id=kakao_id
+            nickname=nickname
         )
         db.session.add(user)
         db.session.commit()
@@ -93,10 +87,6 @@ def create_user(user_id, password_hash=None, email=None, nickname=None, profile_
 def get_user_by_id(user_id):
     """user_id로 사용자 조회"""
     return User.query.filter_by(user_id=user_id).first()
-
-def get_user_by_kakao_id(kakao_id):
-    """카카오 ID로 사용자 조회"""
-    return User.query.filter_by(kakao_id=kakao_id).first()
 
 def update_user(user_id, **kwargs):
     """사용자 정보 업데이트"""

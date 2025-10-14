@@ -37,9 +37,8 @@ with app.app_context():
 # 블루프린트 등록
 app.register_blueprint(auth_bp)
 
-# BlazeFace 모드 사용 여부 설정 (환경변수로 제어 가능)
-USE_BLAZEFACE = os.environ.get('USE_BLAZEFACE', 'false').lower() == 'true'
-camera = VideoCamera(location_callback=get_current_location, use_blazeface=USE_BLAZEFACE)
+# 통합된 음주 탐지기 사용 (BlazeFace 필수)
+camera = VideoCamera(location_callback=get_current_location)
 
 @app.context_processor
 def inject_user():
@@ -47,8 +46,7 @@ def inject_user():
     return dict(
         logged_in=session.get('logged_in', False),
         user_id=session.get('user_id'),
-        nickname=session.get('nickname'),
-        login_type=session.get('login_type')
+        nickname=session.get('nickname')
     )
 
 @app.route('/')
@@ -98,6 +96,28 @@ def delete_by_label():
     if label:
         delete_logs_by_label(label)
     return redirect(url_for("log"))
+
+@app.route("/set_threshold", methods=["POST"])
+def set_threshold():
+    """임계값 동적 조절"""
+    try:
+        threshold = float(request.form.get("threshold", 0.7))
+        if 0.0 <= threshold <= 1.0:
+            camera.set_threshold(threshold)
+            return jsonify({"success": True, "threshold": threshold, "message": f"임계값이 {threshold}로 변경되었습니다."})
+        else:
+            return jsonify({"success": False, "message": "임계값은 0.0과 1.0 사이여야 합니다."})
+    except ValueError:
+        return jsonify({"success": False, "message": "올바른 숫자를 입력해주세요."})
+
+@app.route("/get_threshold", methods=["GET"])
+def get_threshold():
+    """현재 임계값 조회"""
+    try:
+        current_threshold = camera.get_current_threshold()
+        return jsonify({"success": True, "threshold": current_threshold})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 @app.route("/submit_location", methods=["POST"])
 def submit_location():
