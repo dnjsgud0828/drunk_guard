@@ -37,7 +37,9 @@ with app.app_context():
 # 블루프린트 등록
 app.register_blueprint(auth_bp)
 
-camera = VideoCamera(location_callback = get_current_location)
+# BlazeFace 모드 사용 여부 설정 (환경변수로 제어 가능)
+USE_BLAZEFACE = os.environ.get('USE_BLAZEFACE', 'false').lower() == 'true'
+camera = VideoCamera(location_callback=get_current_location, use_blazeface=USE_BLAZEFACE)
 
 @app.context_processor
 def inject_user():

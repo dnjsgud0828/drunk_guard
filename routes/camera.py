@@ -1,6 +1,5 @@
 import cv2
 from routes.models import DrunkClassifier
-import os
 import time
 from routes.db import save_log
 import face_recognition
@@ -9,12 +8,27 @@ from dotenv import load_dotenv
 import threading
 import queue
 import numpy as np
+import torch
+from PIL import Image
+import sys
+import os
+
+# BlazeFace import 
+try:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from blazeface import FaceExtractor, BlazeFace
+    from architectures import fornet, weights
+    from isplutils import utils
+    BLAZEFACE_AVAILABLE = True
+except ImportError as e:
+    print(f"BlazeFace not available: {e}")
+    BLAZEFACE_AVAILABLE = False
 
 load_dotenv()
 MODEL = os.environ.get('MODEL_PATH')
 
 class VideoCamera:
-    def __init__(self, location_callback=None):
+    def __init__(self, location_callback=None, use_blazeface=True):
         # macOS Continuity Camera 경고 해결을 위한 설정
         self.video = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
         
@@ -27,8 +41,8 @@ class VideoCamera:
         # Haar Cascade 분류기 추가 (더 빠른 얼굴 검출)
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
-        self.classifier = DrunkClassifier(model_path=MODEL)
         self.get_location = location_callback
+        self.use_blazeface = use_blazeface and BLAZEFACE_AVAILABLE
 
         if not self.video.isOpened():
             raise RuntimeError("카메라를 열 수 없습니다.")
@@ -41,6 +55,13 @@ class VideoCamera:
         self.cached_face_locations = []
         self.frame_count = 0
         
+        # 모델 초기화
+        if self.use_blazeface:
+            self._init_blazeface_model()
+        else:
+            # 더 민감한 임계값 사용 (Drunk 탐지율 향상)
+            self.classifier = DrunkClassifier(threshold=0.3)
+        
         # 비동기 처리를 위한 큐와 스레드
         self.prediction_queue = queue.Queue(maxsize=2)
         self.prediction_result_queue = queue.Queue(maxsize=2)
@@ -51,6 +72,47 @@ class VideoCamera:
         if self.video.isOpened():
             self.video.release()
 
+    def _init_blazeface_model(self):
+        """BlazeFace 기반 모델 초기화 (Video prediction.ipynb 방식)"""
+        try:
+            # GPU/CPU 설정
+            self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+            
+            # 모델 파라미터
+            '''
+            아래 모델 중 하나 선택
+            - EfficientNetB4
+            - EfficientNetB4ST
+            - EfficientNetAutoAttB4
+            - EfficientNetAutoAttB4ST
+            '''
+            self.net_model = 'EfficientNetAutoAttB4' 
+            self.train_db = 'DFDC'
+            self.face_policy = 'scale'
+            self.face_size = 224
+            
+            # 메인 분류 모델 로드
+            model_url = weights.weight_url['{:s}_{:s}'.format(self.net_model, self.train_db)]
+            self.net = getattr(fornet, self.net_model)().eval().to(self.device)
+            self.net.load_state_dict(torch.load(model_url, map_location=self.device, check_hash=True))
+            
+            # 전처리 변환기
+            self.transf = utils.get_transformer(self.face_policy, self.face_size, self.net.get_normalizer(), train=False)
+            
+            # BlazeFace 얼굴 검출기
+            self.facedet = BlazeFace().to(self.device)
+            self.facedet.load_weights("../blazeface/blazeface.pth")
+            self.facedet.load_anchors("../blazeface/anchors.npy")
+            self.face_extractor = FaceExtractor(facedet=self.facedet)
+            
+            print("BlazeFace 모델 초기화 완료")
+            
+        except Exception as e:
+            print(f"BlazeFace 초기화 실패: {e}")
+            print("기존 DrunkClassifier로 폴백")
+            self.use_blazeface = False
+            self.classifier = DrunkClassifier()
+
     def _prediction_worker(self):
         """비동기 추론 작업을 처리하는 워커 스레드"""
         while True:
@@ -60,7 +122,10 @@ class VideoCamera:
                     break
                 
                 # AI 모델 추론 실행
-                label = self.classifier.predict(face_img)
+                if self.use_blazeface:
+                    label = self._predict_blazeface(face_img)
+                else:
+                    label = self.classifier.predict(face_img)
                 
                 # 결과를 큐에 저장
                 if not self.prediction_result_queue.full():
@@ -71,6 +136,78 @@ class VideoCamera:
             except Exception as e:
                 print(f"Prediction error: {e}")
                 continue
+
+    def _predict_blazeface(self, face_img):
+        """BlazeFace 기반 추론 (Video prediction.ipynb 방식)"""
+        try:
+            # OpenCV 이미지를 PIL 이미지로 변환
+            face_pil = Image.fromarray(cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB))
+            
+            # BlazeFace로 얼굴 검출 및 추출
+            faces_data = self.face_extractor.process_image(img=face_pil)
+            
+            if len(faces_data['faces']) == 0:
+                return "Sober"  # 얼굴이 검출되지 않으면 기본값
+            
+            # 가장 높은 신뢰도의 얼굴 사용
+            face = faces_data['faces'][0]
+            
+            # 전처리 및 추론
+            face_tensor = self.transf(image=face)['image'].unsqueeze(0).to(self.device)
+            
+            with torch.no_grad():
+                # 모델 출력 확인
+                output = self.net(face_tensor)
+                print(f"BlazeFace 모델 출력 크기: {output.shape}")
+                
+                # 출력 크기에 따라 처리
+                if output.shape[1] == 1:
+                    # 단일 출력 (DeepFake 탐지용)
+                    score = torch.sigmoid(output).cpu().numpy().flatten()[0]
+                    print(f"단일 출력 점수: {score}")
+                    # DeepFake 탐지: 0=Real, 1=Fake
+                    # 음주 탐지로 변환: Fake(1) = Drunk, Real(0) = Sober
+                    threshold = 0.5
+                    return "Drunk" if score > threshold else "Sober"
+                else:
+                    # 다중 출력 (2클래스)
+                    sigmoid_output = torch.sigmoid(output).cpu().numpy().flatten()
+                    drunk_score = sigmoid_output[1]
+                    threshold = 0.5
+                    return "Drunk" if drunk_score > threshold else "Sober"
+            
+        except Exception as e:
+            print(f"BlazeFace prediction error: {e}")
+            return "Sober"
+
+    def _detect_faces_blazeface(self, frame):
+        """BlazeFace 기반 얼굴 검출"""
+        try:
+            # OpenCV 프레임을 PIL 이미지로 변환
+            pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            
+            # BlazeFace로 얼굴 검출
+            faces_data = self.face_extractor.process_image(img=pil_image)
+            
+            face_locations = []
+            if len(faces_data['faces']) > 0:
+                # BlazeFace는 얼굴 이미지와 bbox 정보를 반환
+                # bbox 정보가 있다면 사용하고, 없다면 전체 프레임을 얼굴로 간주
+                if 'bboxes' in faces_data and len(faces_data['bboxes']) > 0:
+                    for bbox in faces_data['bboxes']:
+                        # bbox는 [x1, y1, x2, y2] 형식
+                        x1, y1, x2, y2 = bbox
+                        face_locations.append((int(y1), int(x2), int(y2), int(x1)))  # (top, right, bottom, left)
+                else:
+                    # bbox 정보가 없으면 전체 프레임을 얼굴로 간주
+                    h, w = frame.shape[:2]
+                    face_locations.append((0, w, h, 0))  # (top, right, bottom, left)
+            
+            return face_locations
+            
+        except Exception as e:
+            print(f"BlazeFace detection error: {e}")
+            return []
 
     def _detect_faces_hybrid(self, frame):
         """하이브리드 얼굴 검출: Haar Cascade + face_recognition"""
@@ -113,7 +250,10 @@ class VideoCamera:
         # 얼굴 검출 주기 조정 (3프레임마다)
         face_locations = []
         if self.frame_count % 3 == 0 or (now - self.last_face_detection_time) > 0.5:
-            face_locations = self._detect_faces_hybrid(frame)
+            if self.use_blazeface:
+                face_locations = self._detect_faces_blazeface(frame)
+            else:
+                face_locations = self._detect_faces_hybrid(frame)
             self.cached_face_locations = face_locations
             self.last_face_detection_time = now
         else:
@@ -123,25 +263,39 @@ class VideoCamera:
         # 얼굴 탐지 상태 업데이트
         self.face_detected = len(face_locations) > 0
         
-        # 비동기 추론 처리
-        if len(face_locations) > 0 and (now - self.last_prediction_time) > 2:
+        # 비동기 추론 처리 (주기 단축 및 디버깅)
+        prediction_interval = 1.0  # 1초마다 추론 (기존 2초에서 단축)
+        if len(face_locations) > 0 and (now - self.last_prediction_time) > prediction_interval:
             top, right, bottom, left = face_locations[0]
             
             # 얼굴 영역 확장 (더 나은 추론을 위해)
-            margin = 20
-            top = max(0, top - margin)
-            left = max(0, left - margin)
-            bottom = min(frame.shape[0], bottom + margin)
-            right = min(frame.shape[1], right + margin)
+            # 학습 데이터와 유사한 크기로 조정
+            face_width = right - left
+            face_height = bottom - top
+            
+            # 얼굴 크기에 비례한 마진 적용 (더 큰 얼굴일수록 더 큰 마진)
+            margin_ratio = 0.3  # 얼굴 크기의 30%를 마진으로 사용
+            margin_x = int(face_width * margin_ratio)
+            margin_y = int(face_height * margin_ratio)
+            
+            top = max(0, top - margin_y)
+            left = max(0, left - margin_x)
+            bottom = min(frame.shape[0], bottom + margin_y)
+            right = min(frame.shape[1], right + margin_x)
             
             face_img = frame[top:bottom, left:right]
             
             if face_img.size > 0:
                 location = self.get_location() if self.get_location else "Unknown"
                 
+                # 디버깅: 얼굴 이미지 정보 출력
+                print(f"얼굴 이미지 크기: {face_img.shape}")
+                print(f"얼굴 이미지 범위: {face_img.min()} ~ {face_img.max()}")
+                
                 # 큐가 가득 차지 않았을 때만 추론 요청
                 if not self.prediction_queue.full():
                     self.prediction_queue.put((face_img, location))
+                    print(f"추론 요청 큐에 추가: {datetime.now().strftime('%H:%M:%S')}")
                 
                 self.last_prediction_time = now
 
@@ -150,6 +304,10 @@ class VideoCamera:
             while not self.prediction_result_queue.empty():
                 label, location = self.prediction_result_queue.get_nowait()
                 self.prediction_label = label
+                
+                # 디버깅: 추론 결과 출력
+                print(f"추론 결과: {label} (위치: {location})")
+                print(f"결과 업데이트 시간: {datetime.now().strftime('%H:%M:%S')}")
                 
                 # 로그 저장
                 folder = "static/logs"

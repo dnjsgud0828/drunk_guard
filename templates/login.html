@@ -45,42 +45,65 @@
 				padding: 0.75rem;
 				font-size: 1rem;
 				border-radius: 5px;
-			}
-			.kakao-login { 
-				width: 100%; 
-				background: #FEE500; 
-				color: #3c1e1e;
-				padding: 0.75rem;
-				border-radius: 5px;
-				text-decoration: none;
-				display: block;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 				text-align: center;
-				font-weight: bold;
-				transition: background 0.3s;
+				line-height: 1;
 			}
-			.kakao-login:hover {
-				background: #FDD835;
-				color: #3c1e1e;
+			
+			.actions {
+				text-align: center;
 			}
-			.divider { 
-				text-align: center; 
-				margin: 1.5rem 0; 
-				color: #fff;
+			
+			.actions li {
+				display: block;
+				margin: 0;
+			}
+			
+			.simple-login-text {
+				text-align: center;
+				margin: 2rem 0 1rem 0;
+				color: rgba(255,255,255,0.8);
+				font-size: 0.9em;
 				position: relative;
 			}
-			.divider::before {
+			
+			.simple-login-text::after {
 				content: '';
 				position: absolute;
-				top: 50%;
-				left: 0;
-				right: 0;
+				bottom: -0.5rem;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 60px;
 				height: 1px;
-				background: rgba(255,255,255,0.2);
+				background: rgba(255,255,255,0.3);
 			}
-			.divider span {
-				background: rgba(0,0,0,0.8);
-				padding: 0 1rem;
-				position: relative;
+			
+			.kakao-login { 
+				width: 60px;
+				height: 60px;
+				background: #FEE500; 
+				border-radius: 50%;
+				text-decoration: none;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				margin: 0 auto;
+				transition: all 0.3s ease;
+				box-shadow: 0 2px 10px rgba(254, 229, 0, 0.3);
+			}
+			
+			.kakao-login:hover {
+				background: #FDD835;
+				transform: translateY(-2px);
+				box-shadow: 0 4px 15px rgba(254, 229, 0, 0.4);
+			}
+			
+			.kakao-login img {
+				width: 32px;
+				height: 32px;
+				object-fit: contain;
 			}
 			.signup-link {
 				text-align: center;
@@ -153,12 +176,14 @@
 									</ul>
 									</form>
 									
-									<div class="divider">
-										<span>간편로그인</span>
+									<div class="simple-login-text">
+										간편로그인
 									</div>
 									
 									<ul class="actions">
-										<li><a href="{{ url_for('auth.kakao_login_redirect') }}" class="button kakao-login">카카오톡으로 로그인</a></li>
+										<li><a href="{{ url_for('auth.kakao_login_redirect') }}" class="kakao-login">
+											<img src="{{ url_for('static', filename='images/kakao_logo.jpg') }}" alt="카카오톡 로그인">
+										</a></li>
 									</ul>
 									
 									<div class="signup-link">

@@ -1,7 +1,9 @@
 .env
 _pycache_/
 architectures/_pycache_/
+blazeface/
 model/
+scripts/
 haarcascade_frontalface_default.xml
 pages/
 static/images/
