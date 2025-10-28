@@ -27,7 +27,7 @@
 				display: block; 
 				margin-bottom: 0.5rem; 
 				font-weight: bold;
-				color: #000;
+				color: #000 !important;
 			}
 			.form-group input { 
 				width: 100%; 
@@ -48,7 +48,7 @@
 			}
 			
 			.form-group input::placeholder {
-				color: rgba(0,0,0,0.6) !important;
+				color: rgba(0,0,0,0.8) !important;
 				font-weight: 500;
 			}
 			.button.primary { 
@@ -93,50 +93,78 @@
 				background: #D04A3A;
 			}
 			
-			.signup-link {
-				text-align: center;
+			/* 회원가입 섹션 스타일 */
+			.signup-section {
 				margin-top: 2rem;
-				padding: 1rem;
-				background: rgba(255,255,255,0.1);
-				border-radius: 8px;
+			}
+			
+			.divider {
+				text-align: center;
+				margin: 1.5rem 0;
+				position: relative;
+			}
+			
+			.divider::before {
+				content: '';
+				position: absolute;
+				top: 50%;
+				left: 0;
+				right: 0;
+				height: 1px;
+				background: rgba(255,255,255,0.3);
+			}
+			
+			.divider span {
+				background: rgba(255,255,255,0.05);
+				padding: 0.5rem 1rem;
+				color: rgba(255,255,255,0.7);
+				font-size: 0.9rem;
+				font-weight: 500;
+				border-radius: 20px;
 				border: 1px solid rgba(255,255,255,0.2);
 			}
-			.signup-link a {
-				color: #fff !important;
-				text-decoration: none;
-				font-weight: 600;
-				font-size: 1.1rem;
-				display: inline-block;
-				padding: 0.5rem 1rem;
-				background: rgba(255,255,255,0.2);
-				border-radius: 5px;
-				transition: all 0.3s ease;
-				border: 1px solid rgba(255,255,255,0.3);
+			
+			.signup-link {
+				text-align: center;
+				padding: 1.5rem;
+				background: rgba(255,255,255,0.05);
+				border-radius: 10px;
+				border: 1px solid rgba(255,255,255,0.1);
+				backdrop-filter: blur(5px);
 			}
-			.signup-link a:hover {
-				background: rgba(255,255,255,0.3);
-				transform: translateY(-2px);
-				box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+			
+			.signup-text {
+				margin-bottom: 1rem;
+				color: rgba(255,255,255,0.9);
+				font-size: 1rem;
+				font-weight: 500;
 			}
 			
 			.signup-button {
-				display: inline-block;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.5rem;
 				padding: 0.75rem 1.5rem;
-				background: #3498db;
+				background: linear-gradient(135deg, #3498db, #2980b9);
 				color: #fff !important;
 				text-decoration: none;
-				border-radius: 5px;
+				border-radius: 8px;
 				font-weight: 600;
 				font-size: 1rem;
 				transition: all 0.3s ease;
-				border: 2px solid #3498db;
+				border: 2px solid transparent;
+				box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
 			}
 			
 			.signup-button:hover {
-				background: #2980b9;
-				border-color: #2980b9;
+				background: linear-gradient(135deg, #2980b9, #1f5f8b);
 				transform: translateY(-2px);
-				box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+				box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+				border-color: rgba(255,255,255,0.2);
+			}
+			
+			.signup-button i {
+				font-size: 0.9rem;
 			}
 		</style>
 	</head>
@@ -196,10 +224,18 @@
 									</ul>
 									</form>
 									
-									
-									<div class="signup-link">
-										<p style="margin-bottom: 1rem; color: rgba(255,255,255,0.9); font-size: 1rem; font-weight: 500;">아직 계정이 없으신가요?</p>
-										<a href="{{ url_for('signup') }}" class="signup-button">회원가입하기</a>
+									<!-- 회원가입 섹션 -->
+									<div class="signup-section">
+										<div class="divider">
+											<span>또는</span>
+										</div>
+										
+										<div class="signup-link">
+											<p class="signup-text">아직 계정이 없으신가요?</p>
+											<a href="{{ url_for('signup') }}" class="signup-button">
+												<i class="fas fa-user-plus"></i> 회원가입하기
+											</a>
+										</div>
 									</div>
 								</div>
 							</div>

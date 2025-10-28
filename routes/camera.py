@@ -1,5 +1,5 @@
 import cv2
-from routes.models import DrunkClassifier, UnifiedDrunkDetector
+from routes.models import DrunkClassifier
 import time
 from routes.db import save_log
 import face_recognition
@@ -33,18 +33,11 @@ class VideoCamera:
         if not self.video.isOpened():
             raise RuntimeError("카메라를 열 수 없습니다.")
 
-        # 음주 탐지기 초기화 (BlazeFace 우선 사용)
+        # 음주 탐지기 초기화 (일반 모드만 사용)
         model_path = os.environ.get('MODEL_PATH', 'model/bestval.pth')
-        try:
-            # BlazeFace 기반 통합 탐지기 시도
-            self.detector = UnifiedDrunkDetector(threshold=0.7)
-            self.use_blazeface = True
-            print("BlazeFace 기반 탐지기 초기화 완료")
-        except Exception as e:
-            print(f"BlazeFace 초기화 실패, 일반 모드로 전환: {e}")
-            # BlazeFace 실패 시 일반 DrunkClassifier 사용
-            self.detector = DrunkClassifier(model_path, threshold=0.7)
-            self.use_blazeface = False
+        self.detector = DrunkClassifier(model_path, threshold=0.7)
+        self.use_blazeface = False
+        print("일반 모드 탐지기 초기화 완료")
 
         # 성능 최적화를 위한 변수들
         self.last_prediction_time = 0
@@ -98,22 +91,13 @@ class VideoCamera:
         """비동기 추론 작업을 처리하는 워커 스레드"""
         while True:
             try:
-                if self.use_blazeface:
-                    # BlazeFace 모드: 전체 프레임을 전달
-                    frame, location = self.prediction_queue.get(timeout=1)
-                    if frame is None:
-                        break
-                    
-                    # UnifiedDrunkDetector로 추론 실행
-                    label = self.detector.predict(frame)
-                else:
-                    # 일반 모드: 얼굴 이미지만 전달
-                    face_img, location = self.prediction_queue.get(timeout=1)
-                    if face_img is None:
-                        break
-                    
-                    # DrunkClassifier로 추론 실행
-                    label = self.detector.predict(face_img)
+                # 얼굴 이미지만 전달
+                face_img, location = self.prediction_queue.get(timeout=1)
+                if face_img is None:
+                    break
+                
+                # DrunkClassifier로 추론 실행
+                label = self.detector.predict(face_img)
                 
                 # 결과를 큐에 저장
                 if not self.prediction_result_queue.full():
@@ -155,33 +139,28 @@ class VideoCamera:
         if (now - self.last_prediction_time) > prediction_interval:
             location = self.get_location() if self.get_location else "Unknown"
             
-            if self.use_blazeface:
-                # BlazeFace 모드: 얼굴이 검출된 경우에만 전체 프레임을 전달
-                if len(face_locations) > 0 and not self.prediction_queue.full():
-                    self.prediction_queue.put((frame, location))
-            else:
-                # 일반 모드: 얼굴 이미지만 전달
-                if len(face_locations) > 0:
-                    top, right, bottom, left = face_locations[0]
-                    
-                    # 얼굴 영역 확장 (더 나은 추론을 위해)
-                    face_width = right - left
-                    face_height = bottom - top
-                    
-                    # 얼굴 크기에 비례한 마진 적용
-                    margin_ratio = 0.3
-                    margin_x = int(face_width * margin_ratio)
-                    margin_y = int(face_height * margin_ratio)
-                    
-                    top = max(0, top - margin_y)
-                    left = max(0, left - margin_x)
-                    bottom = min(frame.shape[0], bottom + margin_y)
-                    right = min(frame.shape[1], right + margin_x)
-                    
-                    face_img = frame[top:bottom, left:right]
-                    
-                    if face_img.size > 0 and not self.prediction_queue.full():
-                        self.prediction_queue.put((face_img, location))
+            # 얼굴 이미지만 전달
+            if len(face_locations) > 0:
+                top, right, bottom, left = face_locations[0]
+                
+                # 얼굴 영역 확장 (더 나은 추론을 위해)
+                face_width = right - left
+                face_height = bottom - top
+                
+                # 얼굴 크기에 비례한 마진 적용
+                margin_ratio = 0.3
+                margin_x = int(face_width * margin_ratio)
+                margin_y = int(face_height * margin_ratio)
+                
+                top = max(0, top - margin_y)
+                left = max(0, left - margin_x)
+                bottom = min(frame.shape[0], bottom + margin_y)
+                right = min(frame.shape[1], right + margin_x)
+                
+                face_img = frame[top:bottom, left:right]
+                
+                if face_img.size > 0 and not self.prediction_queue.full():
+                    self.prediction_queue.put((face_img, location))
             
             self.last_prediction_time = now
 

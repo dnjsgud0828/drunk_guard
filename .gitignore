@@ -1,10 +1,22 @@
+# 환경 변수 파일
 .env
+
+# python cache 폴더
 _pycache_/
 architectures/_pycache_/
-blazeface/
+routes/_pycache_/
+
+# 얼굴 전처리 관련 폴더
+blazeface/ 
+
+# 데이터 인스턴스 폴더
+instance/
+
+# 학습시킨 모델 폴더
 model/
-scripts/
-haarcascade_frontalface_default.xml
-pages/
-static/images/
+
+# 모델 학습에 관한 폴더
+isplutils/
+
+# 저장된 로그 이미지 폴더
 static/logs/
