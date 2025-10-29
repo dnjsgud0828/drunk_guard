@@ -13,7 +13,8 @@ blazeface/
 instance/
 
 # 학습시킨 모델 폴더
-model/
+model/dfdc_1/
+model/dfdc_bestval/
 
 # 모델 학습에 관한 폴더
 isplutils/

@@ -50,11 +50,15 @@
 						</header>
 						<section class="wrapper style5">
 							<div class="inner" style="text-align: center;">
-								<div class="camera-container" style="display: inline-block; border: 3px solid #333; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
-									<img src="{{ url_for('video_feed') }}" alt="Video Feed" width="640" height="480" style="display: block;">
+								<div class="camera-container" style="display: inline-block; border: 3px solid #333; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.3); position: relative;">
+									<video id="videoElement" autoplay playsinline width="640" height="480" style="display: none;"></video>
+									<canvas id="canvasElement" width="640" height="480" style="display: block;"></canvas>
+									<div id="statusOverlay" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px; font-weight: bold;">
+										<div id="statusText">카메라 접근 중...</div>
+									</div>
 								</div>
 								<div style="margin-top: 20px;">
-									<p style="color: #666; font-size: 0.9em;">실시간 음주 감지 중...</p>
+									<p id="detectionStatus" style="color: #666; font-size: 0.9em;">카메라 접근 중...</p>
 									
 									<!-- 임계값 조절 UI -->
 									<div style="margin-top: 15px; padding: 15px; background-color: #f8f8f8; border-radius: 8px; border: 1px solid #ddd;">
@@ -106,9 +110,179 @@
 			<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
 			
 			<script>
-				// 페이지 로드 시 현재 임계값 가져오기
+				let videoElement = null;
+				let canvasElement = null;
+				let ctx = null;
+				let isDetecting = false;
+				let detectionInterval = null;
+				let lastDetectionTime = 0;
+				const DETECTION_INTERVAL = 2000; // 2초마다 탐지
+				
+				// 페이지 로드 시 초기화
 				$(document).ready(function() {
 					getCurrentThreshold();
+					initCamera();
+				});
+				
+				// 카메라 초기화
+				function initCamera() {
+					videoElement = document.getElementById('videoElement');
+					canvasElement = document.getElementById('canvasElement');
+					ctx = canvasElement.getContext('2d');
+					
+					// 로컬 카메라 스트림 시도
+					checkLocalCamera();
+				}
+				
+				// 로컬 카메라 확인 (로컬 환경)
+				function checkLocalCamera() {
+					fetch('/video_feed')
+						.then(response => {
+							if (response.ok) {
+								// 로컬 카메라 사용 가능
+								videoElement.src = '/video_feed';
+								videoElement.style.display = 'block';
+								canvasElement.style.display = 'none';
+								updateStatus('로컬 카메라 모드', 'success');
+								document.getElementById('detectionStatus').textContent = '실시간 음주 감지 중...';
+							} else {
+								// 클라우드 환경 - 클라이언트 카메라 사용
+								startClientCamera();
+							}
+						})
+						.catch(error => {
+							// 클라우드 환경 - 클라이언트 카메라 사용
+							startClientCamera();
+						});
+				}
+				
+				// 클라이언트 카메라 시작
+				function startClientCamera() {
+					navigator.mediaDevices.getUserMedia({ 
+						video: { 
+							width: 640, 
+							height: 480,
+							facingMode: 'user' 
+						} 
+					})
+					.then(stream => {
+						videoElement.srcObject = stream;
+						videoElement.style.display = 'block';
+						canvasElement.style.display = 'block';
+						updateStatus('카메라 준비 완료', 'success');
+						document.getElementById('detectionStatus').textContent = '클라이언트 카메라 모드 - 탐지 시작...';
+						startDetection();
+					})
+					.catch(error => {
+						console.error('카메라 접근 실패:', error);
+						updateStatus('카메라 접근 실패', 'error');
+						document.getElementById('detectionStatus').textContent = '카메라 접근 권한이 필요합니다.';
+						alert('카메라 접근 권한이 필요합니다. 브라우저 설정에서 카메라 권한을 허용해주세요.');
+					});
+				}
+				
+				// 상태 업데이트
+				function updateStatus(text, type) {
+					const statusDiv = document.getElementById('statusText');
+					statusDiv.textContent = text;
+					if (type === 'success') {
+						statusDiv.style.color = '#00ff00';
+					} else if (type === 'error') {
+						statusDiv.style.color = '#ff0000';
+					} else {
+						statusDiv.style.color = '#ffff00';
+					}
+				}
+				
+				// 탐지 시작
+				function startDetection() {
+					if (isDetecting) return;
+					isDetecting = true;
+					
+					// 캔버스에 비디오 프레임 그리기
+					function drawFrame() {
+						if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+							ctx.drawImage(videoElement, 0, 0, 640, 480);
+						}
+						requestAnimationFrame(drawFrame);
+					}
+					drawFrame();
+					
+					// 주기적으로 탐지 실행
+					detectionInterval = setInterval(() => {
+						captureAndDetect();
+					}, DETECTION_INTERVAL);
+					
+					// 첫 탐지 즉시 실행
+					captureAndDetect();
+				}
+				
+				// 이미지 캡처 및 탐지
+				function captureAndDetect() {
+					if (videoElement.readyState !== videoElement.HAVE_ENOUGH_DATA) {
+						return;
+					}
+					
+					try {
+						// 캔버스에서 이미지 추출
+						const imageData = canvasElement.toDataURL('image/jpeg', 0.8);
+						
+						// 서버로 전송
+						fetch('/predict_image', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								image: imageData
+							})
+						})
+						.then(response => response.json())
+						.then(data => {
+							if (data.success) {
+								const label = data.label;
+								const color = label === 'Drunk' ? '#ff0000' : '#00ff00';
+								
+								// 상태 업데이트
+								updateStatus(`탐지 결과: ${label}`, label === 'Drunk' ? 'error' : 'success');
+								document.getElementById('detectionStatus').textContent = 
+									`최근 탐지: ${label} (${data.location || 'Unknown'})`;
+								
+								// 결과에 따른 시각적 피드백
+								if (label === 'Drunk') {
+									canvasElement.style.border = '5px solid #ff0000';
+									setTimeout(() => {
+										canvasElement.style.border = '3px solid #333';
+									}, 1000);
+								} else {
+									canvasElement.style.border = '3px solid #00ff00';
+									setTimeout(() => {
+										canvasElement.style.border = '3px solid #333';
+									}, 500);
+								}
+							} else {
+								console.error('탐지 실패:', data.message);
+								updateStatus('탐지 실패', 'error');
+							}
+						})
+						.catch(error => {
+							console.error('탐지 요청 오류:', error);
+							updateStatus('서버 오류', 'error');
+						});
+					} catch (error) {
+						console.error('이미지 캡처 오류:', error);
+					}
+				}
+				
+				// 페이지 종료 시 정리
+				window.addEventListener('beforeunload', () => {
+					if (detectionInterval) {
+						clearInterval(detectionInterval);
+					}
+					if (videoElement && videoElement.srcObject) {
+						const tracks = videoElement.srcObject.getTracks();
+						tracks.forEach(track => track.stop());
+					}
 				});
 				
 				// 임계값 업데이트 함수
